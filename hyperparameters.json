@@ -1,0 +1,1 @@
+{"batch_size": 128, "src_embed_dim": 300, "tgt_embed_dim": 300, "use_enc_final_state": true, "attn_layer_size": 125, "GO_ID": 0, "time_major": false, "num_units": 256, "dec_max_time_step": 21, "UNK_ID": 2, "tgt_vocab_size": 327, "EOS_ID": 1, "PAD_ID": 3, "query_units": 250, "lr": 0.001, "keep_prob": 0.8, "src_vocab_size": 203, "rnn_layers": 2}
