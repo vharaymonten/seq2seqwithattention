@@ -7,7 +7,7 @@ class Model(BaseModel):
         self.hparms = hparams
         
         self._build_model(mode, hparams)
-        self.saver = tf.train.Saver()
+        #self.saver = tf.train.Saver()
     
     def _build_model(self, mode, hparams):
         

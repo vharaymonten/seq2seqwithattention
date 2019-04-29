@@ -1,7 +1,7 @@
 import argparse
 import tensorflow as tf 
 import numpy as np
-from helper import data_pipeline, tokenize, batch, save_hparams
+from helper import data_pipeline, tokenize, batch, save_hparams, tokens2sentence, save_metadata, load_metadata
 import json 
 import os 
 from seq2seq import Model
@@ -9,15 +9,17 @@ from seq2seq import Model
 parser = argparse.ArgumentParser()
 
 parser.add_argument("-v-","--verbose", nargs="?", type=bool, const=1, help="enable verbose mode (optional)")
-parser.add_argument("-ckpt_path", "--ckpt_path",nargs="?", help="path to save model",type=str)
+parser.add_argument("-ckpt_prefix", "--ckpt_prefix",nargs="?", help="checkpoint path prefix",type=str)
 parser.add_argument("-src_dataset", "--src_dataset", help="path to source dataset file", type=str)
 parser.add_argument("-tgt_dataset", "--tgt_dataset", help="path to target dataset file", type=str)
 parser.add_argument('-hparams', "--hparams", help="path to hyperparameters file (.json)", type=str)
 parser.add_argument("-epoch", "--epoch", const=1, nargs="?", help="number of epoch", type=int)
-parser.add_argument("-n_step", "--n_step",nargs="?", const=100, help="print every n step ", type=int)
+parser.add_argument("-n_steps_print", "--n_step",nargs="?", const=100, help="print every n step ", type=int)
 parser.add_argument("-test_dir", "--test_dir", help="Just specify the directory of test data if train\
  dataset has been specified\n (both test data filenames must be same as train dataset) ", type=str)
 parser.add_argument("--test_data_split", "-test_data_split", help='test data split (0,1 - 0.9) ', type=float)
+#parser.add_argument("-metadata_path", "--metadata_path",  help='directory for metadata to be saved')
+
 args = parser.parse_args()
 
 json_path = args.hparams
@@ -28,24 +30,43 @@ hparams = json.load(fp)
 epoch = args.epoch 
 print_n_step = args.n_step
 verbose = args.verbose
-ckpt_path = args.ckpt_path
-tgt_sentences, tgt_metadata = data_pipeline(args.tgt_dataset)
-src_sentences, src_metadata = data_pipeline(args.src_dataset)
-tgt_max_len = tgt_metadata.max_time_step
-src_max_len = src_metadata.max_time_step
+ckpt_prefix = args.ckpt_prefix
 
-src_inputs = np.array([tokenize(sentence,src_max_len, src_metadata, source=True, reverse=True)\
+if os.path.isdir(ckpt_prefix) == False:
+    os.mkdir(ckpt_prefix)
+
+ckpt_path = os.path.join(ckpt_prefix, 'model.ckpt')
+
+
+tgt_sentences, tgt_metadata = data_pipeline(args.tgt_dataset, padding=True)
+src_sentences, src_metadata = data_pipeline(args.src_dataset, padding=True)
+
+#tgt_metadata = load_metadata("tgt_metadata.dill")
+#src_metadata = load_metadata("src_metadata.dill")
+
+
+src_inputs = np.array([tokenize(sentence, src_metadata, source=True, reverse=True)\
                           for sentence in src_sentences])
-tgt_outputs = np.array([tokenize(sentence,tgt_max_len, tgt_metadata, source=False, reverse=False)\
+tgt_outputs = np.array([tokenize(sentence, tgt_metadata, source=False, reverse=False)\
                           for sentence in tgt_sentences])
+
+
+
+save_metadata(tgt_metadata, "tgt_metadata.dill")
+save_metadata(src_metadata, "src_metadata.dill")
 
 
 hparams['tgt_vocab_size'] = tgt_metadata.vocab_size
 hparams['src_vocab_size'] = src_metadata.vocab_size
-hparams['dec_max_time_step'] = tgt_max_len
+hparams['dec_max_time_step'] = tgt_metadata.max_time_step
+save_hparams(json_path, hparams)
+
 
 train_graph = tf.Graph()
 eval_graph = tf.Graph()
+infer_graph = tf.Graph()
+
+
 
 #train_sess = tf.Session(graph=train_graph)
 #eval_sess = tf.Session(graph=eval_graph)
@@ -59,6 +80,8 @@ with train_graph.as_default():
 with eval_graph.as_default():
     eval_model = Model("eval", hparams)
 
+with infer_graph.as_default():
+    infer_model = Model("infer", hparams)
 
 
 with tf.Session(graph=train_graph) as sess:
@@ -72,13 +95,20 @@ with tf.Session(graph=train_graph) as sess:
                 if step % 100 == 0: 
                     print(" Epoch : {} Step : {} Loss : {} ".format(epoch, step, loss))
 
-    train_model.saver.save(sess, ckpt_path)
+    saver.save(sess, ckpt_path)
 
 with tf.Session(graph=eval_graph) as sess:
+    saver = tf.train.Saver()
     sess.run(tf.global_variables_initializer())
-    eval_model.saver.restore(sess, ckpt_path)
-    loss = eval_model.eval(sess, src_inputs[:128],tgt_outputs[:128])
+    saver.restore(sess, ckpt_path)
+    loss = eval_model.eval(sess, src_inputs[:128], tgt_outputs[:128])
     print(loss)
 
+with tf.Session(graph=infer_graph) as sess:
+    saver = tf.train.Saver()
+    sess.run(tf.global_variables_initializer())
+    saver.restore(sess, ckpt_path)
+    output = infer_model.inference(sess, src_inputs[0].reshape(1,-1))
+    print(tokens2sentence(output[0], tgt_metadata))
+
 # Save new hparams for later use in inference mode
-save_hparams(hparams)
