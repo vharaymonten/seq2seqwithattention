@@ -27,6 +27,6 @@ tensorflow 1.13.1
 Refererences used in this project
 <br>
 <ul>
-	<li><a href="https://gist.github.com/ilblackdragon/c92066d9d38b236a21d5a7b729a10f12"> seq2seq.py by <b>iblackdragon</b></a></li>
-	<li><a href="https://github.com/tensorflow/nmt"></a></li>
+	<li><a href="https://gist.github.com/ilblackdragon/c92066d9d38b236a21d5a7b729a10f12"> seq2seq.py </a></li>
+	<li><a href="https://github.com/tensorflow/nmt"> Tensorflow nmt</a></li>
 </ul>
