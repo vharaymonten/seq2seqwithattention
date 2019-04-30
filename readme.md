@@ -9,7 +9,7 @@ python3 train.py -v 1 --ckpt_prefix checkpoints -epoch 1 -src_dataset dataset/en
 ```
 ### inference 
 ```
-python3 infer.py --ckpt_prefix checkpoints --hparams hyperparmeters.json
+python3 infer.py --ckpt_prefix checkpoints --hparams hyperparameters.json
 ```
 
 ## Prerequisites
