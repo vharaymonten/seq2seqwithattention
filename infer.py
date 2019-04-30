@@ -11,9 +11,6 @@ parser.add_argument('-hparams', "--hparams", help="path to hyperparameters file 
 
 args = parser.parse_args()
 
-tgt_sentences, tgt_metadata = data_pipeline('dataset/french.txt')
-src_sentences, src_metadata = data_pipeline('dataset/english.txt')
-
 src_metadata = load_metadata('src_metadata.dill')
 tgt_metadata = load_metadata('tgt_metadata.dill')
 

@@ -43,10 +43,6 @@ ckpt_path = os.path.join(ckpt_prefix, 'model.ckpt')
 tgt_sentences, tgt_metadata = data_pipeline(args.tgt_dataset, padding=True)
 src_sentences, src_metadata = data_pipeline(args.src_dataset, padding=True)
 
-#tgt_metadata = load_metadata("tgt_metadata.dill")
-#src_metadata = load_metadata("src_metadata.dill")
-
-
 src_inputs = np.array([tokenize(sentence, src_metadata, source=True, reverse=True)\
                           for sentence in src_sentences])
 tgt_outputs = np.array([tokenize(sentence, tgt_metadata, source=False, reverse=False)\
@@ -66,13 +62,11 @@ save_hparams(json_path, hparams)
 
 train_graph = tf.Graph()
 eval_graph = tf.Graph()
-infer_graph = tf.Graph()
-
 
 
 train_sess = tf.Session(graph=train_graph)
 eval_sess = tf.Session(graph=eval_graph)
-infer_sess = tf.Session(graph=infer_graph)
+
 
 with train_graph.as_default():
     train_model = Model("train", hparams)
@@ -88,16 +82,17 @@ with infer_graph.as_default():
 
 
 for e in range(1, epoch+1):
-    train_sess.run(init)
+    if e == 1:
+        train_sess.run(init)
+        eval_sess.run(eval_init)
     iterator = batch(batch_size, src_inputs[batch_size:], tgt_outputs[batch_size:])
     train_model.train(train_sess, iterator, print_nsteps, e=e)
     train_model.saver.save(train_sess, ckpt_path)
 
-    eval_sess.run(eval_init)
+    #######################
     eval_model.saver.restore(eval_sess, ckpt_path)
-    print(eval_model.eval(eval_sess, src_inputs[:batch_size], tgt_outputs[:batch_size]))
-    
-    #infer_model.inference(infer_sess, src_inputs.reshape(1,-1))
+    eval_loss = eval_model.eval(eval_sess, src_inputs[:batch_size], tgt_outputs[:batch_size])
+    print("Epoch {} Eval loss {}".format(e, eval_loss))
 '''
 with tf.Session(graph=train_graph) as sess:
     sess.run(init)
@@ -129,4 +124,3 @@ with tf.Session(graph=infer_graph) as sess:
 # Save new hparams for later use in inference mode
 train_sess.close()
 eval_sess.close()
-infer_sess.close()
