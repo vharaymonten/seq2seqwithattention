@@ -128,8 +128,20 @@ def sentence2tokens(sentence, metadata):
     tokens  = tokenize(sentence, metadata, reverse=True, source=True)
     return np.array(tokens)
 
+def sentences2tokens(sentences, metadata):
+    tokens_arr = []
+    for sentence in sentences:
+        tokens_arr.append(sentences, metadata)
+    return tokens_arr
+
+def split_data(x, n_split=0.2):
+    split_idx = np.ceil(x.shape[0]*0.2)
+    x_train = x[split_idx:]
+    x_eval = x[:split_idx]
+    return x_train, x_eval
+
 def batch(batch_size, X, Y, time_major=False):
-    assert(X.shape[0] == Y.shape[0]), "Dimension error ! decoder_inputs.shape != decoder_outputs.shape"
+    assert(X.shape[0] == Y.shape[0]), "Dimension mismatch! decoder_inputs.shape != decoder_outputs.shape"
 
     n = X.shape[0]
     steps = n // batch_size
@@ -151,7 +163,7 @@ def data_pipeline(path_to_file, padding=False):
     
     word2int, int2word = create_lookup_table(vocab, padding)
     metadata = namedtuple("Metadata",["vocab","word2int", "int2word", "vocab_size", "max_time_step"])
-    metadata = metadata(list(word2int.keys()), word2int, int2word, len(word2int.items()), sentence_length(sentences)[0])
+    metadata = metadata(list(word2int.keys()), word2int, int2word, len(word2int.keys()), sentence_length(sentences)[0])
     return sentences, metadata
     
 def save_metadata(metadata, fname):
@@ -173,7 +185,7 @@ def load_metadata(fname):
 
 def save_hparams(fp, hparams):
     fp = open(fp,"w")
-    json.dump(hparams, fp)
+    json.dump(hparams, fp, indent=4)
     fp.close()
 
 def save_sentences(sentences, fp):

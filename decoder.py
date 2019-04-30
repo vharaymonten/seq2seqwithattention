@@ -6,7 +6,7 @@ class Decoder(BaseModel):
         self.mode = mode
         self.vocab_size = hparams['tgt_vocab_size']
         self._build_model(hparams, memory, enc_final_state, mem_seq)
-    def _build_loss(self, lr, logits, clip=(-1.25, 1.25), zero_weights_padding=True):
+    def _build_loss(self, lr, logits, clip=(-1.25, 1.25)):
         weights = tf.cast(tf.not_equal(self.inputs_[:, :-1], 1), tf.dtypes.float32)      
         self.cost = tf.contrib.seq2seq.sequence_loss(logits,self.outputs_, weights)
         
@@ -34,7 +34,7 @@ class Decoder(BaseModel):
        
         self.decoder_embed = tf.nn.embedding_lookup(self.embed_weights, self.inputs_)
        
-        decoder_cells = self._generate_rnn_cell("GRU", hparams['num_units'], hparams['rnn_layers'], hparams['keep_prob'])
+        decoder_cells = self._generate_rnn_cell(hparams['cell'], hparams['num_units'], hparams['rnn_layers'], hparams['keep_prob'])
 
         self.seq_length = self._sequence_length(self.inputs_)
         

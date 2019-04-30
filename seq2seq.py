@@ -7,7 +7,7 @@ class Model(BaseModel):
         self.hparms = hparams
         
         self._build_model(mode, hparams)
-        #self.saver = tf.train.Saver()
+        self.saver = tf.train.Saver()
     
     def _build_model(self, mode, hparams):
         
@@ -33,10 +33,14 @@ class Model(BaseModel):
         
         return loss
         
-    def train(self, sess, iterator, verbose=True):
-        for X, y in iterator:
-            self.train_batch(sess, X, y)
-    
+    def train(self, sess, iterator, print_nsteps, e=1, verbose=True):
+        for step, (X, y) in enumerate(iterator):
+            loss = self.train_batch(sess, X, y)
+            step += 1 
+            if step % print_nsteps == 0:
+                 print(" Epoch : {} Step : {} Loss : {} ".format(e, step, loss))
+                
+
         
     
     
